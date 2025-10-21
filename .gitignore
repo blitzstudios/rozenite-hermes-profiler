@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Build artifacts
+android/build/
+ios/build/
+DerivedData/
+*.ipa
+*.xcarchive
+*.xccheckout
+*.hmap
+*.xcuserstate
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+xcuserdata/
+
+# Local configuration
+.env
+.env.*.local
+local.properties
+.idea/
+.gradle/
+.vscode/
+
+# OSX specific files
+.DS_Store
+
+# Metro bundler cache
+.expo/
+metro-cache/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Coverage reports
+coverage/
