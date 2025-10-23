@@ -123,13 +123,14 @@ module.exports = async function startHermesProfilerServer() {
       const profileUrl = `http://localhost:${serverPort}/rozenite/hermes/profile/${filename}`;
       const devtoolsUrl = `devtools://devtools/bundled/devtools_app.html?loadTimelineFromURL=${encodeURIComponent(profileUrl)}`;
 
-      // Use native macOS open command
-      // Open chrome://inspect first to initialize DevTools
-      spawn('open', ['-a', 'Google Chrome', 'chrome://inspect/#devices']);
+      // First, open a blank DevTools instance to initialize the framework
+      const blankDevtoolsUrl = 'devtools://devtools/bundled/devtools_app.html';
+      spawn('open', ['-a', 'Google Chrome', blankDevtoolsUrl]);
       
-      // Wait for Chrome to initialize, then open the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for DevTools to initialize
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Now open the actual profile URL in a new DevTools window
       spawn('open', ['-a', 'Google Chrome', devtoolsUrl]);
 
       res.json({ ok: true, profileUrl, devtoolsUrl });

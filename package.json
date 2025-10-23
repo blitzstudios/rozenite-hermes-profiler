@@ -1,6 +1,6 @@
 {
   "name": "@sleeperhq/rozenite-hermes-profiler",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Rozenite plugin for profiling React Native apps with react-native-release-profiler and viewing results in Chrome DevTools",
   "type": "module",
   "main": "./dist/react-native.cjs",
