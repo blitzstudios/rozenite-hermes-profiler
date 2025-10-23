@@ -49,17 +49,20 @@ In your `rspack.config.js` (or equivalent bundler config):
 ```javascript
 const { withRozenite } = require('@rozenite/repack');
 
-module.exports = {
-  plugins: [
-    withRozenite({
-      include: [
-        '@rozenite/network-activity-plugin',
-        '@rozenite/mmkv-plugin',
-        '@sleeperhq/rozenite-hermes-profiler',  // Add this
-      ],
-    }),
-  ],
-};
+module.exports = withRozenite(
+  (env) => {
+    // ... your webpack/rspack config
+    return config;
+  },
+  {
+    enabled: true,
+    include: [
+      '@rozenite/network-activity-plugin',
+      '@rozenite/mmkv-plugin',
+      '@sleeperhq/rozenite-hermes-profiler',  // Add this
+    ],
+  }
+);
 ```
 
 ### 3. Start the Dev Server Middleware
@@ -67,11 +70,13 @@ module.exports = {
 The plugin requires a local server to transform profiles. Add this to your bundler config:
 
 ```javascript
-// At the top of rspack.config.js
+// At the top of your bundler config file:
 const startHermesProfilerServer = require('@sleeperhq/rozenite-hermes-profiler/server/registerDevServerMiddleware.cjs');
-startHermesProfilerServer();
 
-// ... rest of your config
+// Start the profiler server in development mode
+if (dev) {
+  startHermesProfilerServer();
+}
 ```
 
 ## Usage
