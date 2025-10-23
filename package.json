@@ -40,10 +40,13 @@
     "devtools",
     "hermes"
   ],
-  "author": "",
+  "author": "Sleeper",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/sleeperhq/rozenite-hermes-profiler"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
