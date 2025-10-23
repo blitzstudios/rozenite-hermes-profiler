@@ -1,328 +1,149 @@
-## Plugin Development
+# @sleeperhq/rozenite-hermes-profiler
 
-This guide will walk you through the complete process of creating a React Native DevTools plugin, from initial generation to building for production.
+A [Rozenite](https://rozenite.dev) plugin that integrates [`react-native-release-profiler`](https://github.com/margelo/react-native-release-profiler) with Rozenite DevTools. Profile your React Native app's performance and view the results directly in Chrome DevTools with one click.
 
-> **Tip**: Before creating your own plugin, check out the Official Plugins to see if there's already a plugin that meets your needs!
+## Features
 
-Source: [Rozenite Plugin Development Guide](https://www.rozenite.dev/docs/plugin-development/plugin-development)
+- ✅ **One-Click Profiling**: Start/stop performance profiling from the DevTools panel
+- ✅ **Automatic Transformation**: Raw Hermes CPU profiles are automatically converted to Chrome DevTools format
+- ✅ **Chrome Integration**: Profiles open directly in Chrome DevTools Performance tab
+- ✅ **Clean UI**: Simple, minimal interface for capturing and viewing profiles
 
-### Quick Start
+## Prerequisites
 
-Generate a new plugin in seconds:
+1. **react-native-release-profiler**: Install and configure according to [their documentation](https://github.com/margelo/react-native-release-profiler#installation)
+2. **react-native-fs**: Required for reading profile files from the device
+3. **Rozenite**: This is a Rozenite plugin, so you need Rozenite set up in your React Native project
 
-```bash
-npx rozenite generate
-cd my-awesome-plugin
-rozenite dev
-```
-
-### Step 1: Generate Your Plugin
-
-The `rozenite generate` command creates a complete plugin project structure:
+## Installation
 
 ```bash
-# Generate in current directory
-rozenite generate
+# Using yarn
+yarn add @sleeperhq/rozenite-hermes-profiler react-native-release-profiler react-native-fs
 
-# Generate in specific directory
-rozenite generate my-plugin-name
+# Using npm
+npm install @sleeperhq/rozenite-hermes-profiler react-native-release-profiler react-native-fs
 ```
 
-This creates:
+## Setup
 
-- **Complete TypeScript project setup**
-- **Vite build configuration with Rozenite plugin**
-- **Sample DevTools panel**
-- **Git repository with initial commit**
-- **All dependencies installed**
+### 1. Install the Plugin in Your React Native App
 
-### Step 2: Understanding Plugin Structure
+In your app's entry point (e.g., `index.app.js` or `App.tsx`):
 
-Your generated plugin has this structure:
+```typescript
+import { useHermesProfilerDevTools } from '@sleeperhq/rozenite-hermes-profiler';
 
-```txt
-my-plugin/
-├── src/
-│   └── hello-world.tsx      # Your DevTools panels
-├── react-native.ts          # React Native entry point
-├── rozenite.config.ts       # Plugin configuration
-├── vite.config.ts           # Build configuration
-├── package.json             # Dependencies and scripts
-└── tsconfig.json            # TypeScript configuration
+function App() {
+  // Initialize the plugin
+  useHermesProfilerDevTools();
+  
+  // ... rest of your app
+}
 ```
 
-### Step 3: Creating Panels
+### 2. Register the Plugin with Rozenite
 
-Panels are React components that appear in the DevTools interface. They're defined in your `rozenite.config.ts` file. Plugin developers can leverage React Native APIs and libraries to create powerful debugging tools that integrate deeply with the React Native runtime.
+In your `rspack.config.js` (or equivalent bundler config):
 
-#### Type-Safe Plugin Development
+```javascript
+const { withRozenite } = require('@rozenite/repack');
 
-Rozenite provides full TypeScript support for plugin development. The `RozeniteDevToolsClient` uses an event-based API with full type safety:
-
-##### Client API
-
-```ts
-// Hook usage
-const client = useRozeniteDevToolsClient<EventMap>({
-  pluginId: 'your-plugin-id',
-});
-
-// Client methods
-client.send('event-name', payload); // Send typed event
-client.onMessage('event-name', callback); // Listen for typed event
-client.close(); // Clean up connection
-```
-
-##### Type Safety Benefits
-
-- **Compile-time error checking** for event names and payloads
-- **IntelliSense support** for all event types and methods
-- **Type-safe event handling** between DevTools and React Native
-- **Automatic refactoring** when event interfaces change
-- **Plugin ID isolation** ensures events don't conflict between plugins
-
-`rozenite.config.ts`
-
-```ts
-export default {
-  panels: [
-    {
-      name: 'My Custom Panel',
-      source: './src/my-panel.tsx',
-    },
-    {
-      name: 'Another Panel',
-      source: './src/another-panel.tsx',
-    },
+module.exports = {
+  plugins: [
+    withRozenite({
+      include: [
+        '@rozenite/network-activity-plugin',
+        '@rozenite/mmkv-plugin',
+        '@sleeperhq/rozenite-hermes-profiler',  // Add this
+      ],
+    }),
   ],
 };
 ```
 
-#### Panel Configuration Options
+### 3. Start the Dev Server Middleware
 
-| Property | Type   | Description                      |
-| -------- | ------ | -------------------------------- |
-| name     | string | Display name in DevTools sidebar |
-| source   | string | Path to your React component     |
+The plugin requires a local server to transform profiles. Add this to your bundler config:
 
-#### Creating a Panel Component
+```javascript
+// At the top of rspack.config.js
+const startHermesProfilerServer = require('@sleeperhq/rozenite-hermes-profiler/server/registerDevServerMiddleware.cjs');
+startHermesProfilerServer();
 
-Create a new panel by adding a React component:
-
-`src/my-panel.tsx`
-
-```ts
-import React from 'react';
-
-export default function MyPanel() {
-  return (
-    <div style={{ padding: '16px' }}>
-      <h2>My Custom Panel</h2>
-      <p>This is my custom DevTools panel!</p>
-    </div>
-  );
-}
+// ... rest of your config
 ```
 
-#### Using the Plugin Bridge
+## Usage
 
-Connect your panel to React Native using the plugin bridge. The `RozeniteDevToolsClient` provides full TypeScript support for type-safe communication:
+1. **Open Rozenite DevTools**: Launch your React Native app and open the Rozenite DevTools
+2. **Navigate to Hermes Profiler Panel**: Find the "Hermes Profiler" tab
+3. **Start Profiling**: Click the "Start Profiling" button (turns red)
+4. **Perform Actions**: Use your app and perform the actions you want to profile
+5. **Stop Profiling**: Click "Stop Profiling"
+6. **View Results**: The profile will automatically transform and appear in the list
+7. **Open in Chrome**: Click "Open in Chrome DevTools" to view the performance profile
 
-`src/my-panel.tsx`
+The profile will open directly in Chrome DevTools Performance tab where you can:
+- View the call tree
+- Analyze function execution times
+- Identify performance bottlenecks
+- See detailed flame charts
 
-```ts
-import React, { useEffect, useState } from 'react';
-import { useRozeniteDevToolsClient } from '@rozenite/plugin-bridge';
+## Architecture
 
-// Define type-safe event map
-interface PluginEvents {
-  'user-data': {
-    id: string;
-    name: string;
-    email: string;
-  };
-  'request-user-data': {
-    type: 'userInfo';
-  };
-}
+The plugin consists of three main components:
 
-export default function MyPanel() {
-  const client = useRozeniteDevToolsClient<PluginEvents>({
-    pluginId: 'my-user-panel',
-  });
-  const [userData, setUserData] = useState<PluginEvents['user-data'] | null>(
-    null
-  );
+1. **React Native Hook** (`useHermesProfilerDevTools`): Handles communication between the app and DevTools, triggers profiling, and reads profile files
+2. **DevTools Panel** (`profiler-panel.tsx`): Provides the UI for starting/stopping profiling and viewing results
+3. **Dev Server Middleware** (`registerDevServerMiddleware.cjs`): Runs a local HTTP server that:
+   - Transforms raw Hermes profiles using the `react-native-release-profiler` CLI
+   - Serves transformed profiles via HTTP (required for Chrome DevTools to load them)
+   - Opens Chrome DevTools with the profile loaded
 
-  useEffect(() => {
-    if (!client) return;
+## Configuration
 
-    // Type-safe message listener
-    const subscription = client.onMessage('user-data', (data) => {
-      // TypeScript knows data is PluginEvents['user-data']
-      setUserData(data);
-    });
+The plugin runs a standalone server on `http://localhost:9337` by default. This port is used for:
+- Profile transformation requests
+- Serving profiles to Chrome DevTools
+- Opening Chrome with the correct DevTools URL
 
-    // Type-safe message sending
-    client.send('request-user-data', { type: 'userInfo' });
+The port is configured from a shared config file: `server/config.cjs`.
 
-    return () => subscription.remove();
-  }, [client]);
+## Troubleshooting
 
-  if (!client) {
-    return <div>Connecting to React Native...</div>;
-  }
+### "Transform failed" error
+- Ensure `react-native-release-profiler` is installed and accessible via `npx`
+- Check that the profile file exists at the reported path
 
-  return (
-    <div style={{ padding: '16px' }}>
-      <h2>User Data Panel</h2>
-      {userData ? (
-        <div>
-          <p>
-            <strong>Name:</strong> {userData.name}
-          </p>
-          <p>
-            <strong>Email:</strong> {userData.email}
-          </p>
-        </div>
-      ) : (
-        <p>Loading user data...</p>
-      )}
-    </div>
-  );
-}
-```
+### Chrome doesn't open or shows "site can't be reached"
+- The plugin opens `chrome://inspect` first to initialize DevTools
+- Wait a moment and try clicking "Open in Chrome DevTools" again
+- Ensure Google Chrome is installed at the default location
 
-### Step 4: React Native Integration
+### "Profile not found" when opening in Chrome
+- This usually resolves itself on retry as the profile is cached
+- Check the dev server logs for the actual file path
 
-Add React Native functionality by creating a `react-native.ts` file. You can use React Native APIs and libraries to enhance your plugin:
-
-`react-native.ts`
-
-```ts
-import { DevToolsPluginClient } from '@rozenite/plugin-bridge';
-import { Platform, Dimensions } from 'react-native';
-
-// Use the same type-safe event map
-interface PluginEvents {
-  'user-data': {
-    id: string;
-    name: string;
-    email: string;
-  };
-  'request-user-data': {
-    type: 'userInfo';
-  };
-}
-
-export default function setupPlugin(
-  client: DevToolsPluginClient<PluginEvents>
-) {
-  // Handle messages from DevTools panels with full type safety
-  client.onMessage('request-user-data', (data) => {
-    // Access React Native APIs
-    const deviceInfo = {
-      platform: Platform.OS,
-      version: Platform.Version,
-      dimensions: Dimensions.get('window'),
-    };
-
-    // Send type-safe response
-    client.send('user-data', {
-      id: 'user-123',
-      name: 'John Doe',
-      email: 'john@example.com',
-    });
-  });
-}
-```
-
-### Step 5: Local Development Workflow
-
-#### Complete Development Setup
-
-For local plugin development, follow these steps:
-
-#### Step 1: Create and Start Your Plugin
+## Development
 
 ```bash
-# Create a new plugin
-rozenite generate
-cd my-awesome-plugin
+# Install dependencies
+yarn install
 
-# Start the development server
-rozenite dev
+# Build the plugin
+yarn build
+
+# Development mode (watches for changes)
+yarn dev
 ```
 
-This starts a development server that:
+## License
 
-- **Watches for file changes**
-- **Hot reloads your panels automatically**
-- **Provides real-time feedback during development**
+MIT
 
-#### Step 2: Link to React Native Playground
+## Credits
 
-1. **Create or use a React Native playground project** that has Rozenite configured
-2. **Add your plugin to the playground's dependencies** (you can use `npm link`, `yarn link` or `pnpm link` for local development)
+- Built for [Rozenite DevTools](https://rozenite.dev)
+- Uses [react-native-release-profiler](https://github.com/margelo/react-native-release-profiler) by Margelo
 
-#### Step 3: Run Your React Native App
-
-```bash
-# In your playground project directory
-# Set ROZENITE_DEV_MODE to your plugin name to force load it in dev mode
-ROZENITE_DEV_MODE=my-awesome-plugin npx react-native start
-# Or if using Expo
-ROZENITE_DEV_MODE=my-awesome-plugin npx expo start
-```
-
-Then run the app on your device or simulator.
-
-#### Step 4: Open DevTools
-
-1. Open React Native DevTools in your browser
-2. Your plugin panels should appear in the sidebar automatically
-
-#### Hot Reloading
-
-Your development workflow supports automatic hot reloading:
-
-- **Panel changes**: Your DevTools panels will automatically update when you make changes to your plugin code
-- **React Native integration changes**: Changes to your `react-native.ts` file will also hot reload
-- **New panels**: If you add a new panel to your `rozenite.config.ts`, restart React Native DevTools by pressing `Ctrl+R` (or `Cmd+R` on Mac)
-- **Configuration changes**: Most changes to `rozenite.config.ts` require a DevTools restart
-
-#### Testing Your Plugin
-
-1. Make changes to your panel components — they should update instantly
-2. Modify your React Native integration code — changes should be reflected immediately
-3. Add new panels — remember to restart DevTools with `Ctrl+R`
-4. Test communication between your panels and React Native code
-
-### Step 6: Building for Production
-
-Build your plugin for distribution:
-
-```bash
-rozenite build
-```
-
-This creates optimized bundles:
-
-- **DevTools panels** (minified and optimized)
-- **React Native entry point** (if `react-native.ts` exists)
-- **Ready for distribution**
-
-#### Build Output
-
-The build creates a `dist/` directory with:
-
-- `*.js` — Individual DevTools panel files (one file per panel, names reflect your config)
-- `react-native.js` — React Native integration (if applicable)
-- `rozenite.json` — Plugin manifest with metadata and configuration
-- Source maps for debugging
-
-### Next Steps
-
-- Explore the CLI documentation for more command options
-- Check out Official Plugins to see available plugins
-- Join the community to share your plugins and get help
